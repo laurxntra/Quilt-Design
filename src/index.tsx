@@ -14,7 +14,7 @@ const getPattern = (params: URLSearchParams): string|undefined => {
     case "A": return "A";
     case "B": return "B";
     case "C": return "C";
-    case "D": return "E";
+    case "D": return "D";
     case "E": return "E";
     default:  return undefined;
   }
