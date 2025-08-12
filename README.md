@@ -24,7 +24,7 @@ Quilt Design is a TypeScript application that generates and displays customizabl
    npm run start
    ```
 4. **Open in Browser**
-   http://localhost:8080
+   - http://localhost:8080
 5. **Customize Quilt**
    You can customize the quilt by modifying the URL query parameters:
    - `pattern`: Select a quilt pattern (`A`, `B`, `C`, `D`, or `E`)
