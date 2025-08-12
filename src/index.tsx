@@ -3,6 +3,15 @@ import { createRoot, Root } from 'react-dom/client';
 import { Color, RED, GREEN, Quilt } from './quilt';
 import { PatternA, PatternB, PatternC, PatternD, PatternE } from './patterns';
 import { QuiltElem } from './quilt_draw';
+import { symmetrize } from './quilt_ops';
+
+const getSymmetrize = (params: URLSearchParams, result: Quilt): Quilt => {
+  if (!params.has("symmetrize")) {
+    return result;
+  } else {
+    return symmetrize(result);
+  }
+};
 
 // Returns the pattern number, which must be A-E, or undefined if it was not
 // provided or is not in the valid range.
@@ -20,59 +29,63 @@ const getPattern = (params: URLSearchParams): string|undefined => {
   }
 }
 
-
 // Returns the color requested or undefined if none was specified.
-const getColor = (params: URLSearchParams): Color|undefined => {
-  const colorStr = params.get("color");
-  if (colorStr === null) {
+const getColor = (params: URLSearchParams): Color | undefined => {
+  if (!params.has("color")) {
     return undefined;
   } else {
-    const color = colorStr.toLowerCase();
-    if (color === "red") {
+    const color = params.get("color");
+    if (color === null) {
+      return undefined;
+    }
+    const lowercaseColor = color.toLowerCase();
+    if (lowercaseColor === "red") {
       return RED; 
-    } else if (color === "green") {
+    } else if (lowercaseColor === "green") {
       return GREEN;
     } else {
       return undefined;
     }
   }
-}
-
+};
 
 // Returns the number of rows, which must be a natural number. Defaults to 4.
 const getRows = (params: URLSearchParams): bigint => {
-  const rowStr = params.get("rows");
-  if (rowStr === null) {
-    return 4n;
+  if (!params.has("rows")) {
+    return BigInt(4);
   } else {
-    const rows = parseInt(rowStr);
-    return !isNaN(rows) ? BigInt(rows) : 4n;
+    const rowsStr = params.get("rows");
+    if (rowsStr === null) {
+      return BigInt(4);
+    }
+    const rows = parseInt(rowsStr);
+    return !isNaN(rows) ? BigInt(rows) : BigInt(4);
   }
 };
 
-
-// TODO: update getQuilt with new params as necessary
-
-// Returns the quilt with the given pattern.
-// Throws an exception if the pattern is not A-E.
-const getQuilt = (pattern: string): Quilt => {
-  switch (pattern) {
-    case "A": return PatternA();
-    case "B": return PatternB();
-    case "C": return PatternC();
-    case "D": return PatternD();
-    case "E": return PatternE();
-    default:  throw new Error('impossible');
+const getQuilt = (pattern: string, params: URLSearchParams): Quilt | Error => {
+  const rows: number = Number(getRows(params));
+  const color: Color = getColor(params) || GREEN;
+  const result: Quilt | Error =
+    pattern === "A" ? PatternA(rows, color) :
+    pattern === "B" ? PatternB(rows, color) :
+    pattern === "C" ? PatternC(rows, color) :
+    pattern === "D" ? PatternD(rows, color) :
+    pattern === "E" ? PatternE(rows, color) :
+    new Error('impossible');
+  
+  if (result instanceof Error) {
+    throw result;
   }
+  
+  return result;
 };
-
-
 
 // Parse the arguments to the page, which can indicate the color and number of
 // rows in the quilt.
 const params: URLSearchParams = new URLSearchParams(window.location.search);
-getColor(params);  // TODO: utilize return value for problem 1c
-getRows(params);   // TODO: utilize return value for problem 1e
+getColor(params);
+getRows(params); 
 
 // Create a root in which to show the quilt.
 const main: HTMLElement|null = document.getElementById('main');
@@ -83,23 +96,19 @@ const root: Root = createRoot(main);
 // Invoke the function for the pattern given in the query params.
 const pattern: string|undefined = getPattern(params);
 if (pattern === undefined) {
-  window.location.replace("/?pattern=A");  // redirect with default pattern
-
+  window.location.replace("/?pattern=A");
 } else {
-  // Display the quilt in the page.
   try {
-    // TODO: symmetrize if specified in the query params for problem 4g
-    const result = getQuilt(pattern);
-
-    // Note: <QuiltElem> is a custom HTML tag we created to render the quilt
-    //   images according to the quilt pattern passed in ('result'). We'll
-    //   learn more about these later!
-    root.render(<React.StrictMode><QuiltElem quilt={result}/></React.StrictMode>);
-  } catch (e: unknown) {
-    if (e instanceof Error) {
-      root.render(<p><b>Error</b>: {e.message}</p>);
+    const quiltResult = getQuilt(pattern, params);
+  
+    if (quiltResult instanceof Error) {
+      root.render(<p><b>Error</b>: {quiltResult.message}</p>);
     } else {
-      throw e;
+      const result = getSymmetrize(params, quiltResult);
+        
+      root.render(<React.StrictMode><QuiltElem quilt={result}/></React.StrictMode>);
     }
+  } catch (e: unknown) {
+    throw Error;
   }
 }
